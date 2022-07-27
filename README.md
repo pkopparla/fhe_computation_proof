@@ -8,9 +8,9 @@ for computing the standard deviation of a set of three values. The resulting pol
 are then stored in csv files.
 The polynomials are related as follows:
 
-$ p(x) = l(x)*r(x) - o(x)$
+$p(x) = l(x)*r(x) - o(x)$
 
-$ h(x) = \frac{p(x)}{t(x)}$
+$h(x) = \frac{p(x)}{t(x)}$
 
 ## 2. A rust code that does a prover/verifier interaction for these polynomials (`fhe_rs`)
 
