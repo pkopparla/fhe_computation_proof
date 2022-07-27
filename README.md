@@ -6,13 +6,18 @@ Currently has two parts:
 This bit has comments and describes the construction of a "quadratic arithmetic program"
 for computing the standard deviation of a set of three values. The resulting polynomials
 are then stored in csv files.
+The polynomials are related as follows:
+
+$ p(x) = l(x)*r(x) - o(x)$
+
+$ h(x) = \frac{p(x)}{t(x)}$
 
 ## 2. A rust code that does a prover/verifier interaction for these polynomials (`fhe_rs`)
 
 To run this just go into the directory and do `cargo run`. This has a few pieces:
 
 a. `main.rs` runs the verifier-prover interaction to check the relationship 
-$p(s) = t(x)*h(s)$ for two secret polynomials $p(x), h(x)$ and a shared polynomial $t(x)$ at some point $x=s$. The interesting bit here is that all coefficients are real numbers not integers or field elements.
+$p(s) = t(s)*h(s)$ for two secret polynomials $p(x), h(x)$ and a shared polynomial $t(x)$ at some point $x=s$. The interesting bit here is that all coefficients are real numbers not integers or field elements.
 
 b. `polynomials.rs` has a generic polynomial evaluation function and an fhe version of the same.
 
