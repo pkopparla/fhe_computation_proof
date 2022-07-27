@@ -1,12 +1,12 @@
-use std::cell::Cell;
 use crate::{
-    encrypted_poly_evaluate, polynomials,
+    polynomials::{encrypted_poly_evaluate, poly_evaluate},
     utils::{get_coefs, get_powers},
     INT_BITS, POLY_SIZE,
 };
+use assert_approx_eq::assert_approx_eq;
+use std::cell::Cell;
 use sunscreen::{
-    types::bfv::Fractional, Ciphertext, CompiledFheProgram, 
-    Compiler, Error, FheProgramInput,
+    types::bfv::Fractional, Ciphertext, CompiledFheProgram, Compiler, Error, FheProgramInput,
     Params, PrivateKey, PublicKey, Runtime,
 };
 
@@ -24,7 +24,8 @@ impl Researcher {
 
         let runtime = Runtime::new(app.params())?;
 
-        let computation_polynomial: [Fractional<INT_BITS>; POLY_SIZE] = get_coefs("../P.csv").unwrap();
+        let computation_polynomial: [Fractional<INT_BITS>; POLY_SIZE] =
+            get_coefs("../P.csv").unwrap();
         let quotient_polynomial: [Fractional<INT_BITS>; POLY_SIZE] = get_coefs("../H.csv").unwrap();
         Ok(Researcher {
             compiled_poly_evaluate: app.get_program(encrypted_poly_evaluate).unwrap().clone(),
@@ -40,8 +41,12 @@ impl Researcher {
         public_key: &PublicKey,
     ) -> Result<(Ciphertext, Ciphertext), Error> {
         // Our database will consist of values between 400 and 500.
-        let poly_coefs = self.runtime.encrypt(self.computation_polynomial, &public_key)?;
-        let quot_coefs = self.runtime.encrypt(self.quotient_polynomial, &public_key)?;
+        let poly_coefs = self
+            .runtime
+            .encrypt(self.computation_polynomial, &public_key)?;
+        let quot_coefs = self
+            .runtime
+            .encrypt(self.quotient_polynomial, &public_key)?;
 
         let poly_args: Vec<FheProgramInput> = vec![query.clone().into(), poly_coefs.into()];
         let quot_args: Vec<FheProgramInput> = vec![query.clone().into(), quot_coefs.into()];
@@ -61,7 +66,7 @@ pub struct Referee {
     pub public_key: PublicKey,
     private_key: PrivateKey,
     runtime: Runtime,
-    t_val: Cell<f64>,
+    zero_poly_val: Cell<f64>,
 }
 
 impl Referee {
@@ -70,21 +75,21 @@ impl Referee {
 
         let (public_key, private_key) = runtime.generate_keys()?;
 
-        let t_val = Cell::new(0.0);
+        let zero_poly_val = Cell::new(0.0);
 
         Ok(Referee {
             public_key,
             private_key,
             runtime,
-            t_val,
+            zero_poly_val,
         })
     }
 
     pub fn create_query(&self, base: f64) -> Result<Ciphertext, Error> {
         let raw_powers = get_powers(base).unwrap();
         let raw_coefs = get_coefs("../T.csv").unwrap();
-        let t_frac: f64 = polynomials::poly_evaluate(&raw_powers, &raw_coefs).into();
-        self.t_val.set(t_frac);
+        let t_frac: f64 = poly_evaluate(&raw_powers, &raw_coefs).into();
+        self.zero_poly_val.set(t_frac);
         Ok(self.runtime.encrypt(raw_powers, &self.public_key)?)
     }
 
@@ -94,8 +99,9 @@ impl Referee {
 
         let p_val: f64 = p_frac.into();
         let h_val: f64 = h_frac.into();
-
-        println!("Referee received {} {}", p_val, self.t_val.get() * h_val);
+        // check that p ~= t*h
+        assert_approx_eq!(p_val, self.zero_poly_val.get() * h_val);
+        println!("Referee received {} {}", p_val, self.zero_poly_val.get() * h_val);
 
         Ok(())
     }

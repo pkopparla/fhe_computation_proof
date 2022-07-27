@@ -1,6 +1,9 @@
-use sunscreen::types::{bfv::Fractional, Cipher};
+use sunscreen::{
+    fhe_program,
+    types::{bfv::Fractional, Cipher},
+};
 
-use crate::{FILL_VALUE, INT_BITS, POLY_SIZE};
+use crate::{INT_BITS, POLY_SIZE};
 use std::ops::{Add, Mul};
 
 pub fn poly_evaluate<T, U>(powers: &[T], coefs: &[U]) -> T
@@ -13,6 +16,14 @@ where
         sum = sum + powers[count] * coefs[count];
     }
     sum
+}
+
+#[fhe_program(scheme = "bfv")]
+pub fn encrypted_poly_evaluate<const N: usize>(
+    powers: [Cipher<Fractional<INT_BITS>>; POLY_SIZE],
+    coefs: [Cipher<Fractional<INT_BITS>>; POLY_SIZE],
+) -> Cipher<Fractional<INT_BITS>> {
+    poly_evaluate(&powers, &coefs)
 }
 
 pub fn poly_multiply<T, const N: usize>(first: [T; N], second: [T; N]) -> [T; N]
